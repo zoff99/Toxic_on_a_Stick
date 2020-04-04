@@ -1,0 +1,56 @@
+---
+version: 2
+
+workflows:
+  version: 2
+  build_linux:
+    jobs:
+      - buildme
+
+jobs:
+  buildme:
+    working_directory: ~/work
+    machine:
+      image: ubuntu-1604:201903-01
+
+    steps:
+      - checkout
+      - run: sudo pkill apt-get || echo dummy
+      - run: apt --version
+      - run: sudo apt update &&
+          sudo apt install -y --no-install-recommends apt apt-transport-https
+      - run: apt --version
+      - run: sudo apt update &&
+          sudo apt install -y --no-install-recommends
+            openssl ca-certificates git sudo bc wget rsync
+
+      - run: pwd; ls -al; id -a
+      - run: docker info
+
+      - run: sudo mkdir -p /artefacts
+      - run: sudo chmod a+rwx /artefacts
+      - run: sudo mkdir -p /data
+      - run: sudo chmod a+rwx /data
+      - run: sudo mkdir -p /workspace
+      - run: sudo chmod a+rwx /workspace
+
+      - run: sudo cp -av do_it___external.sh /artefacts/runme.sh
+      - run: sudo chmod a+rx /artefacts/runme.sh
+      - run: sudo cp -av build_tbw.sh /artefacts/build_tbw.sh
+      - run: sudo chmod a+rx /artefacts/build_tbw.sh
+      - run: sudo cp -av encrypt_persistent.sh /artefacts/encrypt_persistent.sh
+      - run: sudo chmod a+rx /artefacts/encrypt_persistent.sh
+      - run: sudo cp -av enter_screen_name.sh /artefacts/enter_screen_name.sh
+      - run: sudo chmod a+rx /artefacts/enter_screen_name.sh
+
+      #- run: sudo /artefacts/runme.sh
+      - run: sudo ./run_in_docker.sh
+      - run: mkdir -p deploy2/
+      - run: sudo chmod a+rwx /artefacts/debian-custom.iso
+      - run: cp -av /artefacts/debian-custom.iso deploy2/debian-custom.iso
+      - run: ls -hal deploy2/
+
+      - store_artifacts:
+          path: ~/work/deploy2
+          destination: deploy
+
